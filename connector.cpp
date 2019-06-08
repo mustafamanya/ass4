@@ -1,6 +1,6 @@
-#include "connector.h"
-#include "parse.h"
-#include "execute.h"
+#include "../header/connector.h"
+#include "../header/parse.h"
+#include "../header/execute.h"
 #include <stack>
  
 int precedence(string op){ 
@@ -104,8 +104,4 @@ void parseConnectorsExecute(char *command){
 		commands[i] = trim(commands[i]);
 		evaluate(commands[i]);
 	}
-<<<<<<< HEAD
 }
-=======
- }
->>>>>>> 6a8df898cb5495b836570de4905e884bbd1aa97d
