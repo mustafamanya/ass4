@@ -104,4 +104,8 @@ void parseConnectorsExecute(char *command){
 		commands[i] = trim(commands[i]);
 		evaluate(commands[i]);
 	}
+<<<<<<< HEAD
 }
+=======
+ }
+>>>>>>> 6a8df898cb5495b836570de4905e884bbd1aa97d

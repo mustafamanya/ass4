@@ -23,10 +23,11 @@ typedef struct command_t
     int argc;
     char *infile;
     char *outfile;
+    bool append;
 } command;
 
-int dupPipe(int pip[2], int end, int destfd);
-int redirect(char *filename, int flags, int destfd);
+int dupPipe(int pip[2], int end, int destfd,bool append);
+int redirect(char *filename, int flags, int destfd,bool append);
 bool processCommands(command comLine[], int nCommands);
 bool runCommand(char *cmdStr);
 bool executeCommand(char *command);
