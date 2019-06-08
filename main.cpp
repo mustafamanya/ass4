@@ -1,6 +1,6 @@
-#include "../header/execute.h"
-#include "../header/parse.h"
-#include "../header/connector.h"
+#include "execute.h"
+#include "parse.h"
+#include "connector.h"
 
 
 int main(int argc, char const *argv[])

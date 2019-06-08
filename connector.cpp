@@ -1,6 +1,6 @@
-#include "../header/connector.h"
-#include "../header/parse.h"
-#include "../header/execute.h"
+#include "connector.h"
+#include "parse.h"
+#include "execute.h"
 #include <stack>
  
 int precedence(string op){ 

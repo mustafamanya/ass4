@@ -1,4 +1,4 @@
-#include "../header/parse.h"
+#include "parse.h"
 
 #define MAXLINE 512
 
