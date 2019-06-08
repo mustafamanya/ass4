@@ -1,4 +1,4 @@
-#include "parse.h"
+#include "../header/parse.h"
 
 #define MAXLINE 512
 
@@ -69,5 +69,5 @@ char ** splitString(char *command,char *delim,int *args_c){
 	args[*args_c][ct] = '\0';
 	*args_c += 1;
 	return args;
- }
+}
 
