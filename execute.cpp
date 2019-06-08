@@ -1,10 +1,11 @@
+
 #include "../header/parse.h"
 #include "../header/execute.h"
 #include <sys/stat.h>
 
 int pidArray[MAX_COMMANDS];
 
-int dupPipe(int pip[2], int end, int destfd){
+int dupPipe(int pip[2], int end, int destfd,bool append){
     if(dup2(pip[end],destfd)<0){
         return -1;
     }
@@ -14,7 +15,7 @@ int dupPipe(int pip[2], int end, int destfd){
     return destfd;
 }
 
-int redirect(char *filename, int flags, int destfd){
+int redirect(char *filename, int flags, int destfd,bool append){
     if (flags==0){
         int fd = open(filename, O_RDONLY);
         if (fd<0){
@@ -27,19 +28,23 @@ int redirect(char *filename, int flags, int destfd){
         }
     } 
     else {
-        remove(filename);
-        if(access(filename, W_OK)==0){
-            return -1;
-        } 
-        else {
-            int fd2 = open(filename, O_WRONLY | O_CREAT | O_EXCL, S_IRWXU );
+        if(!append){
+            remove(filename);
+        }
+            int fd2 = -1;
+            if(append){
+                fd2 = open(filename,O_RDWR | O_APPEND);
+            }
+            else{
+                fd2 = open(filename, O_WRONLY | O_CREAT | O_EXCL, S_IRWXU );
+            }
             if (fd2<0){
                 return -1;
             }
             if(dup2(fd2, destfd) < 0){
                 return -1;
             }
-        }
+        
     }
     return destfd;
 }
@@ -68,7 +73,7 @@ bool processCommands(command comLine[], int nCommands){
         pidCount++;
         if(pid == 0){
             if(commandIndex == 0 && comLine[0].infile != NULL){
-                redirect(comLine[0].infile,0,READ_END);
+                redirect(comLine[0].infile,0,READ_END,comLine[commandIndex].append);
                 redir = 1;
             } else {
                 if(close(fd[READ_END])<0){
@@ -84,7 +89,7 @@ bool processCommands(command comLine[], int nCommands){
                 }
             }
             if (fd[WRITE_END] != 1){
-                dupPipe(fd, WRITE_END, 1);
+                dupPipe(fd, WRITE_END, 1,comLine[commandIndex].append);
             }
             if(execvp (comLine[commandIndex].argv[0],
                        comLine[commandIndex].argv )<0){
@@ -116,14 +121,14 @@ bool processCommands(command comLine[], int nCommands){
     pidArray[pidCount] = pid;
     if(pid == 0){
         if(nCommands == 1 &&  comLine[0].infile != NULL){
-            redirect(comLine[0].infile,0, READ_END);
+            redirect(comLine[0].infile,0, READ_END,comLine[nCommands-1].append);
             redir = 1;
         }
         if(comLine[nCommands-1].outfile != NULL){
-            redirect(comLine[nCommands-1].outfile,1,WRITE_END);
+            redirect(comLine[nCommands-1].outfile,1,WRITE_END,comLine[nCommands-1].append);
         }
         if(nCommands != 1 ){
-            dupPipe(fd, READ_END, 0);
+            dupPipe(fd, READ_END, 0,comLine[nCommands-1].append);
         }
         if(execvp(comLine[nCommands - 1].argv[0],
                   comLine[nCommands - 1].argv)<0){
@@ -163,25 +168,41 @@ bool runCommand(char *cmdStr){
     	}
     	commands[i].argc ++;
     	commands[i].argv[numTokens] = NULL;
+        commands[i].append = false;
+        commands[i].infile = NULL;
+        commands[i].outfile = NULL;
     }
     for(int i=0;i<numCommands;i++){
         int cmd = commands[i].argc;
         for(int ii=0;ii<commands[i].argc;ii++){
-            if(commands[i].argv[ii] != NULL && (strcmp(commands[i].argv[ii],">") == 0 || strcmp(commands[i].argv[ii],">>") == 0)){
-                commands[i].outfile = (char *)malloc(strlen(commands[i].argv[ii+1])+1);
-                strcpy(commands[i].outfile,commands[i].argv[ii+1]);
-                cmd = (cmd > ii) ? ii : cmd;
-                commands[i].argv[ii] = NULL;
-                commands[i].argv[ii+1] = NULL;
-                ii++;
-            }
-            if(commands[i].argv[ii] != NULL && (strcmp(commands[i].argv[ii],"<") == 0|| strcmp(commands[i].argv[ii],"<<") == 0)){
-                commands[i].infile = (char *)malloc(strlen(commands[i].argv[ii+1])+1);
-                strcpy(commands[i].infile,commands[i].argv[ii+1]);
-                cmd = (cmd > ii) ? ii : cmd;
-                commands[i].argv[ii] = NULL;
-                commands[i].argv[ii+1] = NULL;
-                ii++;
+            if(commands[i].argv[ii] != NULL){
+                if(strcmp(commands[i].argv[ii],">") == 0){
+                    commands[i].outfile = (char *)malloc(strlen(commands[i].argv[ii+1])+1);
+                    strcpy(commands[i].outfile,commands[i].argv[ii+1]);
+                    cmd = (cmd > ii) ? ii : cmd;
+                    commands[i].argv[ii] = NULL;
+                    commands[i].argv[ii+1] = NULL;
+                    commands[i].append = false;
+                    ii++;
+                }
+                else if(strcmp(commands[i].argv[ii],">>") == 0){
+                    commands[i].outfile = (char *)malloc(strlen(commands[i].argv[ii+1])+1);
+                    strcpy(commands[i].outfile,commands[i].argv[ii+1]);
+                    cmd = (cmd > ii) ? ii : cmd;
+                    commands[i].argv[ii] = NULL;
+                    commands[i].argv[ii+1] = NULL;
+                    commands[i].append = true;
+                    ii++;
+                }
+                else if (strcmp(commands[i].argv[ii],"<") == 0 || strcmp(commands[i].argv[ii],"<<") == 0){
+                    commands[i].infile = (char *)malloc(strlen(commands[i].argv[ii+1])+1);
+                    strcpy(commands[i].infile,commands[i].argv[ii+1]);
+                    cmd = (cmd > ii) ? ii : cmd;
+                    commands[i].argv[ii] = NULL;
+                    commands[i].argv[ii+1] = NULL;
+                    commands[i].append = false;
+                    ii++;
+                }
             }
         }
         commands[i].argc = cmd;
