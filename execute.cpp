@@ -1,11 +1,5 @@
-<<<<<<< HEAD
-#include "parse.h"
-#include "execute.h"
-=======
-
 #include "../header/parse.h"
 #include "../header/execute.h"
->>>>>>> 6a8df898cb5495b836570de4905e884bbd1aa97d
 #include <sys/stat.h>
 
 int pidArray[MAX_COMMANDS];
